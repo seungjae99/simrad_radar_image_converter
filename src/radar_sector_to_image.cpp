@@ -143,8 +143,17 @@ public:
   }
 
   void clear() {
-    for (auto &s: sectors_) delete s.tex;
+    context_.makeCurrent(&surface_);
+
+    for (auto &s: sectors_) {
+      if (s.tex) {
+        delete s.tex;
+        s.tex = nullptr;
+      }
+    }
     sectors_.clear();
+
+    context_.doneCurrent();
   }
 
 private:
