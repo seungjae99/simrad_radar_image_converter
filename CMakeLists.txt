@@ -24,21 +24,6 @@ include_directories(
   ${Qt5OpenGL_INCLUDE_DIRS}
 )
 
-add_executable(radar_sector_to_image_node src/radar_sector_to_image.cpp)
-target_link_libraries(radar_sector_to_image_node
-  Qt5::Gui
-  Qt5::OpenGL
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-)
-
-add_executable(radar_sector_to_image2_node src/radar_sector_to_image2.cpp)
-target_link_libraries(radar_sector_to_image2_node
-  Qt5::Gui Qt5::OpenGL
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-)
-
 add_executable(radar_sector_to_image_transmit_node src/radar_sector_to_image_transmit.cpp)
 target_link_libraries(radar_sector_to_image_transmit_node
   Qt5::Gui Qt5::OpenGL
@@ -46,8 +31,8 @@ target_link_libraries(radar_sector_to_image_transmit_node
   ${OpenCV_LIBRARIES}
 )
 
-add_executable(radar_sector_to_image_transmit_node2 src/radar_sector_to_image_transmit2.cpp)
-target_link_libraries(radar_sector_to_image_transmit_node2
+add_executable(test_node src/test.cpp)
+target_link_libraries(test_node
   Qt5::Gui Qt5::OpenGL
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}

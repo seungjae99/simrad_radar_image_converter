@@ -1,8 +1,11 @@
+// radar_offscreen_node.cpp
+
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <marine_sensor_msgs/RadarSector.h>
 #include <marine_radar_control_msgs/RadarControlValue.h>
 #include <sensor_msgs/Image.h>
+
 #include <QGuiApplication>
 #include <QObject>
 #include <QTimer>
@@ -53,7 +56,7 @@ struct Sector {
 
 class OffscreenRadarRenderer : protected QOpenGLFunctions {
 public:
-  OffscreenRadarRenderer(int size) : size_(size), surface_(), context_(), fbo_(nullptr), program_(nullptr), quadVBO_(0) {}
+  OffscreenRadarRenderer(int size) : size_(size) {}
 
   bool init() {
     QSurfaceFormat fmt;
@@ -114,7 +117,7 @@ public:
     context_.makeCurrent(&surface_);
     fbo_->bind();
     glViewport(0,0,size_,size_);
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (auto &s: sectors_) {
       if (!s.tex) {
@@ -135,6 +138,7 @@ public:
     fbo_->release();
     QImage out = fbo_->toImage();
     context_.doneCurrent();
+
     return out;
   }
 
@@ -160,35 +164,47 @@ private:
   std::deque<Sector> sectors_;
 };
 
-void sendTransmitCommand(ros::NodeHandle& nh, const std::string& topic, const std::string& value) {
+void sendRadarStatus(ros::NodeHandle& nh, const std::string& topic, const std::string& status_value) {
   ros::Publisher ctrl_pub = nh.advertise<marine_radar_control_msgs::RadarControlValue>(topic, 1, true);
   marine_radar_control_msgs::RadarControlValue msg;
-  msg.key = "transmit";
-  msg.value = value;
+  msg.key = "status";           
+  msg.value = status_value;
+
   ros::Rate rate(10);
-  for (int i = 0; i < 50; ++i) {
-    if (ctrl_pub.getNumSubscribers() > 0) break;
+  int tries = 0;
+  while (ctrl_pub.getNumSubscribers() == 0 && ros::ok() && tries < 50) {
+    ROS_INFO_THROTTLE(1.0, "Waiting for subscriber to %s...", topic.c_str());
     rate.sleep();
+    tries++;
   }
-  ctrl_pub.publish(msg);
-  ROS_INFO("Radar transmit command [%s] sent to: %s", value.c_str(), topic.c_str());
+
+  if (ctrl_pub.getNumSubscribers() > 0) {
+    for (int i = 0; i < 5; ++i) {
+      ctrl_pub.publish(msg);
+      ROS_INFO("Sent radar command [%s] (%d/5)", status_value.c_str(), i+1);
+      rate.sleep();
+    }
+  } else {
+    ROS_WARN("No subscriber found for radar control topic %s. Command not sent.", topic.c_str());
+  }
 }
 
 int main(int argc, char** argv) {
   qputenv("QT_QPA_PLATFORM", "offscreen");
   qputenv("QT_OPENGL", "software");
 
-  ros::init(argc, argv, "radar_offscreen_node");
+  ros::init(argc, argv, "radar_img_node");
   QGuiApplication app(argc, argv);
   ros::NodeHandle nh("~");
 
   std::string radar_control_topic = "/HaloA/change_state";
-  sendTransmitCommand(nh, radar_control_topic, "on");
+  sendRadarStatus(nh, radar_control_topic, "transmit");  // 시작 시 켬
+  
 
   std::string topic;
   nh.param<std::string>("input_topic", topic, "/HaloA/data");
 
-  ros::Publisher pub = nh.advertise<sensor_msgs::Image>("radar_image_offscreen", 1);
+  ros::Publisher pub = nh.advertise<sensor_msgs::Image>("radar_image", 1);
   OffscreenRadarRenderer renderer(512);
   if (!renderer.init()) {
     ROS_ERROR("Offscreen GL 초기화 실패");
@@ -207,6 +223,9 @@ int main(int argc, char** argv) {
       renderer.addSector(*msg);
 
       if (!first && std::fabs(delta) > WRAP_THRESH) {
+        float max_range = msg->range_max;
+        ROS_INFO_STREAM("[RadarRenderer] range_max = " << max_range << " meters");
+
         QImage img = renderer.renderFullCircle();
         cv::Mat mat(img.height(), img.width(), CV_8UC4,
                     const_cast<uchar*>(img.bits()), img.bytesPerLine());
@@ -225,7 +244,7 @@ int main(int argc, char** argv) {
   QTimer rosTimer;
   QObject::connect(&rosTimer, &QTimer::timeout, [&](){
     if (!ros::ok()) {
-      sendTransmitCommand(nh, radar_control_topic, "off");
+      sendRadarStatus(nh, radar_control_topic, "standby");
       app.quit();
     } else {
       ros::spinOnce();
