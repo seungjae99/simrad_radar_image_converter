@@ -2,8 +2,8 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <marine_sensor_msgs/RadarSector.h>
+#include <marine_radar_control_msgs/RadarControlValue.h>
 #include <sensor_msgs/Image.h>
-
 #include <QGuiApplication>
 #include <QObject>
 #include <QTimer>
@@ -17,8 +17,6 @@
 #include <QImage>
 #include <deque>
 #include <cmath>
-
-// 셰이더 정의
 static const char *VERT_SHADER =
     "#version 330 core\n"
     "layout(location=0) in vec4 vertex;\n"
@@ -28,7 +26,6 @@ static const char *VERT_SHADER =
     "  gl_Position = matrix * vertex;\n"
     "  texc = vertex.xy;\n"
     "}\n";
-
 static const char *FRAG_SHADER =
     "#version 330 core\n"
     "in vec2 texc;\n"
@@ -46,20 +43,17 @@ static const char *FRAG_SHADER =
     "  vec2 uv = vec2(r, (theta-minAngle)/(maxAngle-minAngle));\n"
     "  fragColor = texture(texture_sampler, uv);\n"
     "}\n";
-
 struct Sector {
   QImage          image;
   float           minA, maxA;
   QOpenGLTexture* tex = nullptr;
 };
-
 class OffscreenRadarRenderer : protected QOpenGLFunctions {
 public:
   OffscreenRadarRenderer(int size)
     : size_(size), surface_(), context_(),
       fbo_(nullptr), program_(nullptr), quadVBO_(0)
   {}
-
   bool init() {
     QSurfaceFormat fmt;
     fmt.setVersion(3,3);
@@ -67,13 +61,10 @@ public:
     surface_.setFormat(fmt);
     surface_.create();
     if (!surface_.isValid()) return false;
-
     context_.setFormat(fmt);
     if (!context_.create()) return false;
-
     context_.makeCurrent(&surface_);
     initializeOpenGLFunctions();
-
     program_ = new QOpenGLShaderProgram();
     program_->addShaderFromSourceCode(QOpenGLShader::Vertex,   VERT_SHADER);
     program_->addShaderFromSourceCode(QOpenGLShader::Fragment, FRAG_SHADER);
@@ -83,20 +74,16 @@ public:
     QMatrix4x4 m; m.setToIdentity();
     program_->setUniformValue("matrix", m);
     program_->setUniformValue("texture_sampler", 0);
-
     GLfloat verts[] = { -1,-1,0,  1,-1,0,  1,1,0,  -1,1,0 };
     glGenBuffers(1, &quadVBO_);
     glBindBuffer(GL_ARRAY_BUFFER, quadVBO_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-
     QOpenGLFramebufferObjectFormat ff;
     ff.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
     fbo_ = new QOpenGLFramebufferObject(size_, size_, ff);
-
     context_.doneCurrent();
     return true;
   }
-
   void addSector(const marine_sensor_msgs::RadarSector& msg) {
     int H = msg.intensities.size();
     int W = msg.intensities.front().echoes.size();
@@ -105,22 +92,18 @@ public:
     for (int i = 0; i < H; ++i)
       for (int j = 0; j < W; ++j)
         polar.bits()[(H-1-i)*W + j] = uchar(msg.intensities[i].echoes[j]*255);
-
     float a1 = msg.angle_start;
     float a2 = a1 + msg.angle_increment*(H-1);
     float half = (a2 - a1)/(2.0f*H);
     float minA = a2 - half*1.1f;
     float maxA = a1 + half*1.1f;
-
     sectors_.push_back({polar, minA, maxA, nullptr});
   }
-
   QImage renderFullCircle() {
     context_.makeCurrent(&surface_);
     fbo_->bind();
     glViewport(0,0,size_,size_);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
     for (auto &s: sectors_) {
       if (!s.tex) {
         s.tex = new QOpenGLTexture(s.image);
@@ -129,23 +112,19 @@ public:
       }
       program_->setUniformValue("minAngle", s.minA);
       program_->setUniformValue("maxAngle", s.maxA);
-
       glBindBuffer(GL_ARRAY_BUFFER, quadVBO_);
       program_->enableAttributeArray(0);
       program_->setAttributeBuffer(0, GL_FLOAT, 0, 3, 3*sizeof(GLfloat));
       s.tex->bind(0);
       glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
-
     fbo_->release();
     QImage out = fbo_->toImage();
     context_.doneCurrent();
     return out;
   }
-
   void clear() {
     context_.makeCurrent(&surface_);
-
     for (auto &s: sectors_) {
       if (s.tex) {
         delete s.tex;
@@ -153,10 +132,8 @@ public:
       }
     }
     sectors_.clear();
-
     context_.doneCurrent();
   }
-
 private:
   int size_;
   QOffscreenSurface   surface_;
@@ -166,39 +143,46 @@ private:
   GLuint                     quadVBO_;
   std::deque<Sector>        sectors_;
 };
-
+// transmit 명령 전송 함수
+void sendTransmitCommand(ros::NodeHandle& nh, const std::string& topic, const std::string& value) {
+  ros::Publisher ctrl_pub = nh.advertise<marine_radar_control_msgs::RadarControlValue>(topic, 1, true);
+  marine_radar_control_msgs::RadarControlValue msg;
+  msg.key = "transmit";
+  msg.value = value;
+  ros::Rate rate(10);
+  for (int i = 0; i < 50; ++i) {
+    if (ctrl_pub.getNumSubscribers() > 0) break;
+    rate.sleep();
+  }
+  ctrl_pub.publish(msg);
+  ROS_INFO("Radar transmit command [%s] sent to: %s", value.c_str(), topic.c_str());
+}
 int main(int argc, char** argv) {
   qputenv("QT_QPA_PLATFORM", "offscreen");
   qputenv("QT_OPENGL", "software");
-
   ros::init(argc, argv, "radar_offscreen_node");
   QGuiApplication app(argc, argv);
-
   ros::NodeHandle nh("~");
+  std::string radar_control_topic = "/HaloA/change_state";
+  sendTransmitCommand(nh, radar_control_topic, "on");  // 실행 시 ON
   std::string topic;
   nh.param<std::string>("input_topic", topic, "/HaloA/data");
-
   image_transport::ImageTransport it(nh);
   auto pub = it.advertise("radar_image_offscreen", 1);
-
   OffscreenRadarRenderer renderer(512);
   if (!renderer.init()) {
     ROS_ERROR("Offscreen GL 초기화 실패");
     return -1;
   }
-
   float last_start = 0.0f;
   bool first = true;
   const float WRAP_THRESH = static_cast<float>(M_PI);
-
   ros::Subscriber sub = nh.subscribe<marine_sensor_msgs::RadarSector>(
     topic, 10, [&](const marine_sensor_msgs::RadarSector::ConstPtr& msg){
       float a1 = msg->angle_start;
       float delta = a1 - last_start;
       ROS_INFO_THROTTLE(1.0, "angle_start=%.3f, delta=%.3f", a1, delta);
-
       renderer.addSector(*msg);
-
       if (!first && std::fabs(delta) > WRAP_THRESH) {
         QImage img = renderer.renderFullCircle();
         cv::Mat mat(img.height(), img.width(), CV_8UC4,
@@ -214,13 +198,16 @@ int main(int argc, char** argv) {
       first = false;
       last_start = a1;
     });
-
   QTimer rosTimer;
   QObject::connect(&rosTimer, &QTimer::timeout, [&](){
-    if (!ros::ok()) app.quit();
-    else ros::spinOnce();
+    if (!ros::ok()) {
+      // 종료 전에 transmit OFF 전송
+      sendTransmitCommand(nh, radar_control_topic, "off");
+      app.quit();
+    } else {
+      ros::spinOnce();
+    }
   });
   rosTimer.start(10);
-
   return app.exec();
 }

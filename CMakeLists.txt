@@ -38,3 +38,17 @@ target_link_libraries(radar_sector_to_image2_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
+
+add_executable(radar_sector_to_image_transmit_node src/radar_sector_to_image_transmit.cpp)
+target_link_libraries(radar_sector_to_image_transmit_node
+  Qt5::Gui Qt5::OpenGL
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
+add_executable(radar_sector_to_image_transmit_node2 src/radar_sector_to_image_transmit2.cpp)
+target_link_libraries(radar_sector_to_image_transmit_node2
+  Qt5::Gui Qt5::OpenGL
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)

@@ -1,9 +1,8 @@
 #include <ros/ros.h>
-#include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <marine_sensor_msgs/RadarSector.h>
+#include <marine_radar_control_msgs/RadarControlValue.h>
 #include <sensor_msgs/Image.h>
-
 #include <QGuiApplication>
 #include <QObject>
 #include <QTimer>
@@ -18,7 +17,6 @@
 #include <deque>
 #include <cmath>
 
-// 셰이더 정의
 static const char *VERT_SHADER =
     "#version 330 core\n"
     "layout(location=0) in vec4 vertex;\n"
@@ -48,17 +46,14 @@ static const char *FRAG_SHADER =
     "}\n";
 
 struct Sector {
-  QImage          image;
-  float           minA, maxA;
+  QImage image;
+  float minA, maxA;
   QOpenGLTexture* tex = nullptr;
 };
 
 class OffscreenRadarRenderer : protected QOpenGLFunctions {
 public:
-  OffscreenRadarRenderer(int size)
-    : size_(size), surface_(), context_(),
-      fbo_(nullptr), program_(nullptr), quadVBO_(0)
-  {}
+  OffscreenRadarRenderer(int size) : size_(size), surface_(), context_(), fbo_(nullptr), program_(nullptr), quadVBO_(0) {}
 
   bool init() {
     QSurfaceFormat fmt;
@@ -75,7 +70,7 @@ public:
     initializeOpenGLFunctions();
 
     program_ = new QOpenGLShaderProgram();
-    program_->addShaderFromSourceCode(QOpenGLShader::Vertex,   VERT_SHADER);
+    program_->addShaderFromSourceCode(QOpenGLShader::Vertex, VERT_SHADER);
     program_->addShaderFromSourceCode(QOpenGLShader::Fragment, FRAG_SHADER);
     program_->bindAttributeLocation("vertex", 0);
     if (!program_->link()) return false;
@@ -145,7 +140,6 @@ public:
 
   void clear() {
     context_.makeCurrent(&surface_);
-
     for (auto &s: sectors_) {
       if (s.tex) {
         delete s.tex;
@@ -153,19 +147,32 @@ public:
       }
     }
     sectors_.clear();
-
     context_.doneCurrent();
   }
 
 private:
   int size_;
-  QOffscreenSurface   surface_;
-  QOpenGLContext      context_;
+  QOffscreenSurface surface_;
+  QOpenGLContext context_;
   QOpenGLFramebufferObject* fbo_;
-  QOpenGLShaderProgram*     program_;
-  GLuint                     quadVBO_;
-  std::deque<Sector>        sectors_;
+  QOpenGLShaderProgram* program_;
+  GLuint quadVBO_;
+  std::deque<Sector> sectors_;
 };
+
+void sendTransmitCommand(ros::NodeHandle& nh, const std::string& topic, const std::string& value) {
+  ros::Publisher ctrl_pub = nh.advertise<marine_radar_control_msgs::RadarControlValue>(topic, 1, true);
+  marine_radar_control_msgs::RadarControlValue msg;
+  msg.key = "transmit";
+  msg.value = value;
+  ros::Rate rate(10);
+  for (int i = 0; i < 50; ++i) {
+    if (ctrl_pub.getNumSubscribers() > 0) break;
+    rate.sleep();
+  }
+  ctrl_pub.publish(msg);
+  ROS_INFO("Radar transmit command [%s] sent to: %s", value.c_str(), topic.c_str());
+}
 
 int main(int argc, char** argv) {
   qputenv("QT_QPA_PLATFORM", "offscreen");
@@ -173,14 +180,15 @@ int main(int argc, char** argv) {
 
   ros::init(argc, argv, "radar_offscreen_node");
   QGuiApplication app(argc, argv);
-
   ros::NodeHandle nh("~");
+
+  std::string radar_control_topic = "/HaloA/change_state";
+  sendTransmitCommand(nh, radar_control_topic, "on");
+
   std::string topic;
   nh.param<std::string>("input_topic", topic, "/HaloA/data");
 
-  image_transport::ImageTransport it(nh);
-  auto pub = it.advertise("radar_image_offscreen", 1);
-
+  ros::Publisher pub = nh.advertise<sensor_msgs::Image>("radar_image_offscreen", 1);
   OffscreenRadarRenderer renderer(512);
   if (!renderer.init()) {
     ROS_ERROR("Offscreen GL 초기화 실패");
@@ -196,7 +204,6 @@ int main(int argc, char** argv) {
       float a1 = msg->angle_start;
       float delta = a1 - last_start;
       ROS_INFO_THROTTLE(1.0, "angle_start=%.3f, delta=%.3f", a1, delta);
-
       renderer.addSector(*msg);
 
       if (!first && std::fabs(delta) > WRAP_THRESH) {
@@ -207,7 +214,7 @@ int main(int argc, char** argv) {
         cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
         cv::cvtColor(bgr, gray, cv::COLOR_BGR2GRAY);
         std_msgs::Header hdr; hdr.stamp = ros::Time::now();
-        auto out = cv_bridge::CvImage(hdr, "mono8", gray).toImageMsg();
+        sensor_msgs::ImagePtr out = cv_bridge::CvImage(hdr, "mono8", gray).toImageMsg();
         pub.publish(out);
         renderer.clear();
       }
@@ -217,8 +224,12 @@ int main(int argc, char** argv) {
 
   QTimer rosTimer;
   QObject::connect(&rosTimer, &QTimer::timeout, [&](){
-    if (!ros::ok()) app.quit();
-    else ros::spinOnce();
+    if (!ros::ok()) {
+      sendTransmitCommand(nh, radar_control_topic, "off");
+      app.quit();
+    } else {
+      ros::spinOnce();
+    }
   });
   rosTimer.start(10);
 
