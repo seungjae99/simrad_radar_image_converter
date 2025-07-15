@@ -3,6 +3,7 @@ project(radar_converter_node)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   image_transport
   cv_bridge
   marine_sensor_msgs
@@ -13,7 +14,7 @@ find_package(Qt5 REQUIRED COMPONENTS Gui OpenGL)
 find_package(OpenCV REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp image_transport cv_bridge marine_sensor_msgs sensor_msgs
+  CATKIN_DEPENDS roscpp rospy image_transport cv_bridge marine_sensor_msgs sensor_msgs
 )
 
 
