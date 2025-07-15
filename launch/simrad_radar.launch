@@ -1,0 +1,18 @@
+<launch>
+  <!-- range_limit 파라미터선언 -->
+  <arg name="range_limit" default="3000.0" />
+
+  <node pkg="radar_converter_node"
+        type="radar_sector_to_image_transmit_node"
+        name="radar_img_node"
+        output="screen">
+    <param name="range_limit" value="$(arg range_limit)" />
+  </node>
+
+  <node pkg="rviz"
+        type="rviz"
+        name="rviz"
+        args="-d $(find radar_converter_node)/rviz/radar.rviz"
+        respawn="false"
+        output="screen" />
+</launch>
