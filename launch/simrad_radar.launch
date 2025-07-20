@@ -3,7 +3,7 @@
   <arg name="range_limit" default="3000.0" />
 
   <node pkg="radar_converter_node"
-        type="radar_sector_to_image_transmit_node"
+        type="radar_img_crop"
         name="radar_img_node"
         output="screen">
     <param name="range_limit" value="$(arg range_limit)" />

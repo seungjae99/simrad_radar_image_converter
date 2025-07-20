@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(radar_converter_node)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -25,8 +28,15 @@ include_directories(
   ${Qt5OpenGL_INCLUDE_DIRS}
 )
 
-add_executable(radar_sector_to_image_transmit_node src/radar_sector_to_image_transmit.cpp)
-target_link_libraries(radar_sector_to_image_transmit_node
+add_executable(radar_img_crop src/radar_img_crop.cpp)
+target_link_libraries(radar_img_crop
+  Qt5::Gui Qt5::OpenGL
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
+add_executable(radar_img_range src/radar_img_range.cpp)
+target_link_libraries(radar_img_range
   Qt5::Gui Qt5::OpenGL
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
