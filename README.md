@@ -6,22 +6,19 @@ standard **`sensor_msgs/Image`** Cartesian images—useful for radar odometry al
 
 ## Nodes
 
-### `radar_sector_to_image_transmit_node`
+### `radar_img_crop.cpp`
 GPU off-screen converter; accumulates a full 360 ° sweep in polar space,
 warps it to Cartesian, and publishes **one image per revolution**.
 
-| Parameter | Type / Default | 
-|-----------|----------------|
-| **`input_topic`** | `string` – `/HaloA/data` | 
-| **`sensor_range_max`** | `float` – `3000.0` | 
-| **`range_limit`** | `float` – `1000.0` | 
-| **`pixels_per_meter`** | `double` – `0.08535` |
+### `radar_img_range.cpp`
+add dynamic range control function node
+
+
 
 **Publishes**
 
-| Topic | Type |
-|-------|------|
-| `~/radar_image` | `sensor_msgs/Image` |
+Topic: `radar_img_node/radar_image`
+Interface: `sensor_msgs/Image`
 
 
 ### `radar_set_state.py`
