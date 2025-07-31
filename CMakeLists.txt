@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Qt5 REQUIRED COMPONENTS Gui OpenGL)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs)
 
 catkin_package(
   CATKIN_DEPENDS roscpp rospy image_transport cv_bridge marine_sensor_msgs sensor_msgs
@@ -42,9 +42,23 @@ target_link_libraries(radar_img_range
   ${OpenCV_LIBRARIES}
 )
 
-add_executable(test_node src/test.cpp)
-target_link_libraries(test_node
+# add_executable(test_node src/test.cpp)
+# target_link_libraries(test_node
+#   Qt5::Gui Qt5::OpenGL
+#   ${catkin_LIBRARIES}
+#   ${OpenCV_LIBRARIES}
+# )
+
+add_executable(radar_com_img_range src/radar_com_img_range.cpp)
+target_link_libraries(radar_com_img_range
   Qt5::Gui Qt5::OpenGL
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
+
+# add_executable(radar_com_img_range2 src/radar_com_img_range2.cpp)
+# target_link_libraries(radar_com_img_range2
+#   Qt5::Gui Qt5::OpenGL
+#   ${catkin_LIBRARIES}
+#   ${OpenCV_LIBRARIES}
+# )
