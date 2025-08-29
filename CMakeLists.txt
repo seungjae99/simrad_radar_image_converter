@@ -42,23 +42,9 @@ target_link_libraries(radar_img_range
   ${OpenCV_LIBRARIES}
 )
 
-# add_executable(test_node src/test.cpp)
-# target_link_libraries(test_node
-#   Qt5::Gui Qt5::OpenGL
-#   ${catkin_LIBRARIES}
-#   ${OpenCV_LIBRARIES}
-# )
-
 add_executable(radar_com_img_range src/radar_com_img_range.cpp)
 target_link_libraries(radar_com_img_range
   Qt5::Gui Qt5::OpenGL
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
-
-# add_executable(radar_com_img_range2 src/radar_com_img_range2.cpp)
-# target_link_libraries(radar_com_img_range2
-#   Qt5::Gui Qt5::OpenGL
-#   ${catkin_LIBRARIES}
-#   ${OpenCV_LIBRARIES}
-# )
