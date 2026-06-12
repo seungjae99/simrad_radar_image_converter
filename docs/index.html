@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>radar_com_img_range — Simrad Halo20+ ROS Driver</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f1117;
+      color: #c9d1e0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 48px 16px 80px;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ---- header ---- */
+    .header {
+      margin-bottom: 40px;
+      border-bottom: 1px solid #2d3148;
+      padding-bottom: 28px;
+    }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 4px;
+      border: 1px solid;
+    }
+    .badge-ros    { color: #7dcfaa; border-color: #2a5040; background: #0e2520; }
+    .badge-cpp    { color: #7aa2f7; border-color: #1e2f66; background: #0c1530; }
+    .badge-opengl { color: #e0af68; border-color: #5a4010; background: #261c06; }
+    .badge-qt5    { color: #bb9af7; border-color: #3d2266; background: #1a0d30; }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    .subtitle {
+      color: #8892a4;
+      font-size: 14px;
+    }
+    .subtitle strong { color: #a8b4c8; font-weight: 500; }
+
+    /* ---- cards ---- */
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 28px 30px;
+      margin-bottom: 18px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #7aa2f7;
+      margin-bottom: 16px;
+    }
+    p { margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ---- pipeline diagram ---- */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 20px 0 4px;
+    }
+    .pipe-step {
+      background: #151826;
+      border: 1px solid #3a4060;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: #c9d1e0;
+      text-align: center;
+      min-width: 110px;
+    }
+    .pipe-step .label {
+      font-size: 10px;
+      color: #5a6480;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .pipe-step .name {
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .pipe-arrow {
+      color: #3a4060;
+      font-size: 18px;
+      padding: 0 6px;
+      flex-shrink: 0;
+    }
+
+    /* ---- topic table ---- */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    thead th {
+      text-align: left;
+      color: #5a6480;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 0 12px 10px 0;
+      border-bottom: 1px solid #2d3148;
+    }
+    tbody td {
+      padding: 10px 12px 10px 0;
+      border-bottom: 1px solid #1a1d2e;
+      vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    .topic-dir {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .dir-in  { color: #9ece6a; background: #182210; border: 1px solid #2a4018; }
+    .dir-out { color: #f7768e; background: #2a1018; border: 1px solid #501828; }
+    .dir-ctrl{ color: #e0af68; background: #261c06; border: 1px solid #5a4010; }
+    .mono { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 12.5px; color: #7aa2f7; }
+    .type-text { color: #8892a4; font-size: 12.5px; font-family: "SF Mono", "Fira Code", Consolas, monospace; }
+
+    /* ---- param table ---- */
+    .param-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 580px) { .param-grid { grid-template-columns: 1fr; } }
+    .param-item {
+      background: #151826;
+      border: 1px solid #2a2e44;
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .param-name { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 12.5px; color: #7aa2f7; font-weight: 600; margin-bottom: 3px; }
+    .param-default { font-size: 11.5px; color: #5a6480; margin-bottom: 4px; }
+    .param-default span { color: #e0af68; }
+    .param-desc { font-size: 13px; color: #8892a4; }
+
+    /* ---- feature list ---- */
+    .feature-list { list-style: none; padding: 0; }
+    .feature-list li {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #1a1d2e;
+      align-items: flex-start;
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .feat-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #1a1d2e;
+      border: 1px solid #3a4060;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #7aa2f7;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .feat-body strong { color: #c9d1e0; }
+    .feat-body { font-size: 13.5px; color: #8892a4; line-height: 1.6; }
+
+    /* ---- design notes ---- */
+    .note-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    @media (max-width: 580px) { .note-grid { grid-template-columns: 1fr; } }
+    .note-item {
+      background: #151826;
+      border-left: 3px solid #3a4060;
+      border-radius: 0 6px 6px 0;
+      padding: 12px 14px;
+    }
+    .note-item.accent-blue  { border-left-color: #7aa2f7; }
+    .note-item.accent-green { border-left-color: #9ece6a; }
+    .note-item.accent-orange{ border-left-color: #e0af68; }
+    .note-item.accent-purple{ border-left-color: #bb9af7; }
+    .note-heading { font-size: 12px; font-weight: 700; color: #c9d1e0; margin-bottom: 5px; }
+    .note-body { font-size: 12.5px; color: #6a7490; line-height: 1.55; }
+
+    /* ---- footer ---- */
+    .footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid #1a1d2e;
+      font-size: 12px;
+      color: #3a4060;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge-row">
+      <span class="badge badge-ros">ROS Noetic</span>
+      <span class="badge badge-cpp">C++17</span>
+      <span class="badge badge-opengl">OpenGL 3.3</span>
+      <span class="badge badge-qt5">Qt5</span>
+    </div>
+    <h1>radar_com_img_range</h1>
+    <p class="subtitle">
+      A ROS node that receives raw polar sweep data from the
+      <strong>Simrad Halo20+ marine radar</strong>,
+      reconstructs a full 360&deg; Cartesian image using offscreen GPU rendering,
+      and publishes it as a compressed image for downstream robotics pipelines.
+    </p>
+  </div>
+
+  <!-- Overview -->
+  <div class="card">
+    <div class="card-title">Overview</div>
+    <p>
+      Marine radar sensors like the Simrad Halo20+ stream data as a sequence of
+      narrow angular slices called <em>sectors</em>. Each sector contains a 1-D
+      array of echo intensities measured along a radial sweep. To use this data
+      with standard image-based algorithms — such as radar odometry or SLAM —
+      the polar representation must be converted to a rectilinear Cartesian image.
+    </p>
+    <p>
+      <code class="mono">radar_com_img_range</code> performs this conversion entirely on the GPU
+      using a Qt5 offscreen OpenGL context and a custom GLSL fragment shader.
+      After accumulating enough sectors to complete one full revolution,
+      it renders the result into a framebuffer object, reads the pixels back,
+      and publishes the grayscale image as a ROS
+      <code class="mono">sensor_msgs/CompressedImage</code> (PNG or JPEG).
+    </p>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="card">
+    <div class="card-title">Processing Pipeline</div>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="label">Input</div>
+        <div class="name">RadarSector</div>
+      </div>
+      <div class="pipe-arrow">&#8594;</div>
+      <div class="pipe-step">
+        <div class="label">CPU</div>
+        <div class="name">Polar QImage</div>
+      </div>
+      <div class="pipe-arrow">&#8594;</div>
+      <div class="pipe-step">
+        <div class="label">GPU / GLSL</div>
+        <div class="name">FBO Render</div>
+      </div>
+      <div class="pipe-arrow">&#8594;</div>
+      <div class="pipe-step">
+        <div class="label">CPU</div>
+        <div class="name">cv::imencode</div>
+      </div>
+      <div class="pipe-arrow">&#8594;</div>
+      <div class="pipe-step">
+        <div class="label">Output</div>
+        <div class="name">CompressedImage</div>
+      </div>
+    </div>
+    <p style="margin-top:16px; color:#6a7490; font-size:13px;">
+      One image is published per full 360&deg; revolution. The wrap-around is
+      detected by monitoring the sign-change of the <code class="mono">angle_start</code>
+      delta between consecutive sectors (&Delta; &gt; &pi; radians triggers a flush).
+    </p>
+  </div>
+
+  <!-- Core Features -->
+  <div class="card">
+    <div class="card-title">Core Features</div>
+    <ul class="feature-list">
+      <li>
+        <div class="feat-icon">1</div>
+        <div class="feat-body">
+          <strong>Dynamic framebuffer sizing.</strong>
+          The OpenGL FBO is created on the first received message, sized to
+          <code class="mono">echo_count &times; 2</code> pixels (diameter = full radial
+          resolution), clamped to [64, 2048]. No configuration required.
+        </div>
+      </li>
+      <li>
+        <div class="feat-icon">2</div>
+        <div class="feat-body">
+          <strong>GPU polar-to-Cartesian projection.</strong>
+          The GLSL fragment shader converts each output pixel's Cartesian
+          coordinates to polar <code class="mono">(r, theta)</code>, samples the correct
+          sector texture via UV mapping, and discards pixels outside the angular
+          range of that sector. All sectors are composited in a single render pass.
+        </div>
+      </li>
+      <li>
+        <div class="feat-icon">3</div>
+        <div class="feat-body">
+          <strong>Wrap-around boundary correction.</strong>
+          Sectors that straddle the 0/2&pi; boundary are handled in the shader via
+          a separate branch, ensuring the rendered circle has no seam artifact at
+          north (top of image).
+        </div>
+      </li>
+      <li>
+        <div class="feat-icon">4</div>
+        <div class="feat-body">
+          <strong>Selectable compressed output.</strong>
+          The output image is encoded as PNG (lossless, default) or JPEG
+          (configurable quality, 0&ndash;100). This reduces ROS topic bandwidth
+          compared to raw <code class="mono">sensor_msgs/Image</code>.
+        </div>
+      </li>
+      <li>
+        <div class="feat-icon">5</div>
+        <div class="feat-body">
+          <strong>Radar lifecycle management.</strong>
+          On startup the node commands the sensor to <em>transmit</em>;
+          on shutdown (ROS OK check in Qt timer loop) it commands <em>standby</em>.
+          This prevents the radar from running unattended if the node crashes.
+        </div>
+      </li>
+      <li>
+        <div class="feat-icon">6</div>
+        <div class="feat-body">
+          <strong>Headless operation.</strong>
+          Qt5 is forced into offscreen mode via <code class="mono">QT_QPA_PLATFORM=offscreen</code>,
+          making the node safe to run on robots without a display server.
+          The Qt event loop drives <code class="mono">ros::spinOnce()</code> through a
+          10 ms QTimer to keep ROS callbacks alive.
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Topics -->
+  <div class="card">
+    <div class="card-title">ROS Topics</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:70px">Dir</th>
+          <th>Topic</th>
+          <th>Message Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="topic-dir dir-in">SUB</span></td>
+          <td class="mono">~input_topic<br><span style="color:#3a4060;font-size:11px">default: /HaloA/data</span></td>
+          <td class="type-text">marine_sensor_msgs/<br>RadarSector</td>
+          <td style="font-size:13px;color:#6a7490">Raw polar sweep slices from the sensor</td>
+        </tr>
+        <tr>
+          <td><span class="topic-dir dir-out">PUB</span></td>
+          <td class="mono">~radar_image/compressed</td>
+          <td class="type-text">sensor_msgs/<br>CompressedImage</td>
+          <td style="font-size:13px;color:#6a7490">Grayscale Cartesian image, one per revolution</td>
+        </tr>
+        <tr>
+          <td><span class="topic-dir dir-ctrl">CTRL</span></td>
+          <td class="mono">/HaloA/change_state</td>
+          <td class="type-text">marine_radar_control_msgs/<br>RadarControlValue</td>
+          <td style="font-size:13px;color:#6a7490">Transmit / standby lifecycle commands</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Parameters -->
+  <div class="card">
+    <div class="card-title">ROS Parameters</div>
+    <div class="param-grid">
+      <div class="param-item">
+        <div class="param-name">~input_topic</div>
+        <div class="param-default">default: <span>"/HaloA/data"</span></div>
+        <div class="param-desc">Topic name for incoming RadarSector messages</div>
+      </div>
+      <div class="param-item">
+        <div class="param-name">~compression_format</div>
+        <div class="param-default">default: <span>"png"</span></div>
+        <div class="param-desc">Output codec: <code class="mono">"png"</code> or <code class="mono">"jpeg"</code></div>
+      </div>
+      <div class="param-item">
+        <div class="param-name">~jpeg_quality</div>
+        <div class="param-default">default: <span>90</span></div>
+        <div class="param-desc">JPEG quality (0&ndash;100). Ignored for PNG output</div>
+      </div>
+      <div class="param-item">
+        <div class="param-name">~frame_id</div>
+        <div class="param-default">default: <span>"map"</span></div>
+        <div class="param-desc">TF frame id set in the published image header</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Design Notes -->
+  <div class="card">
+    <div class="card-title">Design Notes</div>
+    <div class="note-grid">
+      <div class="note-item accent-blue">
+        <div class="note-heading">Why Qt5 OpenGL instead of OpenCV warpPolar?</div>
+        <div class="note-body">
+          GPU-side angular clipping via the fragment shader avoids seam gaps
+          between sectors and handles arbitrary angular increments without
+          resampling artifacts. Each sector is projected exactly once.
+        </div>
+      </div>
+      <div class="note-item accent-green">
+        <div class="note-heading">Grayscale output</div>
+        <div class="note-body">
+          Echo intensity is a scalar value. Encoding as grayscale halves
+          the memory footprint and is the expected input format for
+          radar-based odometry and feature-matching algorithms.
+        </div>
+      </div>
+      <div class="note-item accent-orange">
+        <div class="note-heading">FBO size is echo-driven</div>
+        <div class="note-body">
+          Setting FBO size to <code>echo_count &times; 2</code> ensures one output pixel
+          per range bin along any radial line, preserving the sensor's native
+          range resolution without upsampling.
+        </div>
+      </div>
+      <div class="note-item accent-purple">
+        <div class="note-heading">Sector angle edge interpretation</div>
+        <div class="note-body">
+          <code>angle_start</code> is treated as the leading edge of the sweep block,
+          with width <code>angle_increment &times; H</code>.
+          A small epsilon (1e-4 rad) is added to both boundaries to prevent
+          hairline gaps at sector edges.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context -->
+  <div class="card">
+    <div class="card-title">Relationship to Other Nodes</div>
+    <p>
+      This node is the most production-ready variant in the package.
+      It supersedes <code class="mono">radar_img_range</code> (which publishes raw
+      <code class="mono">sensor_msgs/Image</code>) by adding compressed transport support,
+      and supersedes <code class="mono">radar_img_crop</code> (which requires a fixed
+      <code class="mono">sensor_range_max</code> parameter) by deriving the FBO size
+      automatically from the sensor data.
+    </p>
+    <p>
+      The published <code class="mono">CompressedImage</code> is intended as direct input to
+      radar odometry or scan-matching algorithms running elsewhere in the ROS graph.
+      The fixed <code class="mono">frame_id: map</code> default assumes a stationary or
+      map-referenced sensor mount; override via the <code class="mono">~frame_id</code> parameter
+      when used on a moving platform.
+    </p>
+  </div>
+
+  <div class="footer">
+    radar_converter_node &mdash; Simrad Halo20+ ROS Driver &mdash; seungjae99
+  </div>
+
+</div>
+</body>
+</html>
