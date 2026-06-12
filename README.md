@@ -2,6 +2,8 @@
 Tools for turning Simrad **`marine_sensor_msgs/RadarSector`** scans into
 standard Cartesian images — useful for radar odometry algorithms.
 
+[Overview Report](https://seungjae99.github.io/simrad_radar_image_converter/)
+
 ---
 
 ## Main Node: `radar_com_img_range`
