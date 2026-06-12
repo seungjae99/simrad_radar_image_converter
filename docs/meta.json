@@ -1,4 +1,4 @@
 {
   "desc": "ROS1 driver for Simrad Halo20+ — polar radar sweeps to compressed Cartesian images via offscreen OpenGL",
-  "tags": ["ROS1", "C++", "OpenGL", "Qt5", "OpenCV", "Radar"]
+  "tags": ["ROS1", "OpenGL"]
 }
