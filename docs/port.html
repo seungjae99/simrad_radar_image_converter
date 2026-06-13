@@ -432,7 +432,7 @@
 
   <!-- HERO -->
   <header class="hero">
-    <div class="hero-eyebrow">ROS Driver Extension · C++ / OpenGL · 2024</div>
+    <div class="hero-eyebrow">ROS Driver Extension · C++ / OpenGL · 2025</div>
     <h1>Simrad Halo20+ <span>레이더 드라이버 확장 노드</span><br>개발 포트폴리오</h1>
     <p class="hero-sub">
       극좌표 원시 데이터만 제공하는 해상 레이더 드라이버를 확장하여,
@@ -478,7 +478,6 @@
       <p style="color:var(--ink-2); font-size:13.5px;">
         선박해양플랜트연구소(KRISO) 의뢰 과제로, <strong>GPS를 신뢰할 수 없는 극한 해상 환경</strong>에서
         Simrad Halo20+ 해상 레이더 단독으로 항법을 수행하는 오도메트리 추정 시스템을 개발하는 프로젝트였습니다.
-        Livox LiDAR, Xsens IMU, Intel RealSense와 함께 통합 센서 플랫폼을 구성하였으며,
         본 드라이버 확장 노드는 해당 파이프라인의 최초 데이터 진입점 역할을 담당합니다.
       </p>
       <div class="callout callout-problem">
@@ -745,7 +744,7 @@ pub_.<span class="fn">publish</span>(msg);</pre>
       <div class="result-caption">
         <strong>Fig. 1</strong> &nbsp;OpenGL FBO 렌더링 결과 — 직교좌표 Cartesian 레이더 이미지.
         제부도 인근 실해역 실험에서 취득. 중앙이 선박 위치이며 해안선 및 주변 지형지물이 반사 패턴으로 나타납니다.
-        오도메트리 파이프라인(LIO-SAM 계열)의 입력 이미지로 사용되었습니다.
+        오도메트리 파이프라인의 입력 이미지로 사용되었습니다.
       </div>
     </div>
     <div class="grid-2">
@@ -757,7 +756,7 @@ pub_.<span class="fn">publish</span>(msg);</pre>
             <tr><td>실험 구간</td><td>제부도 인근 실해역 약 1 km</td></tr>
             <tr><td>절대경로오차 (APE)</td><td><strong>6 m 이내</strong></td></tr>
             <tr><td>항법 센서</td><td>레이더 단독 (GPS 미사용)</td></tr>
-            <tr><td>IMU 융합</td><td>Xsens MTi-G-710</td></tr>
+            <tr><td>GT 생성</td><td>GPS + IMU 칼만 필터 융합</td></tr>
           </tbody>
         </table>
       </div>
@@ -840,7 +839,7 @@ rosrun radar_converter_node radar_com_img_range \
     <div>
       <strong>최승재 (Choi Seungjae)</strong> &nbsp;·&nbsp; 자율운항시스템공학과 &nbsp;·&nbsp; 충남대학교
     </div>
-    <div>레이더 오도메트리 프로젝트 · KRISO 과제 · 2024</div>
+    <div>레이더 오도메트리 프로젝트 · KRISO 과제 · 2025</div>
   </footer>
 
 </div><!-- /page -->
