@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simrad Halo20+ ROS Driver Extension — 기술 포트폴리오</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:       #1a1f2e;
+    --ink-2:     #3d4460;
+    --ink-3:     #6b7490;
+    --divider:   #dde2ee;
+    --bg:        #f7f8fc;
+    --bg-card:   #ffffff;
+    --bg-code:   #f0f2f8;
+    --accent:    #1a56db;
+    --accent-2:  #0e3fa3;
+    --accent-3:  #e8f0fe;
+    --orange:    #c45000;
+    --orange-bg: #fff4ec;
+    --green:     #166534;
+    --green-bg:  #f0faf4;
+    --purple:    #5b21b6;
+    --purple-bg: #f5f3ff;
+    --red:       #991b1b;
+    --red-bg:    #fef2f2;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  /* ── TOP NAV ─────────────────────────────────────── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(247,248,252,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--divider);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+  }
+  .topbar-logo {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .topbar-nav {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+  .topbar-nav a {
+    font-size: 12.5px;
+    color: var(--ink-3);
+    text-decoration: none;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: color 0.15s;
+  }
+  .topbar-nav a:hover { color: var(--accent); }
+
+  /* ── PAGE WRAPPER ────────────────────────────────── */
+  .page { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── HERO ────────────────────────────────────────── */
+  .hero {
+    padding: 56px 0 40px;
+    border-bottom: 1px solid var(--divider);
+    margin-bottom: 44px;
+  }
+  .hero-eyebrow {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero-sub {
+    font-size: 15.5px;
+    color: var(--ink-2);
+    max-width: 620px;
+    margin-bottom: 24px;
+    line-height: 1.65;
+  }
+  .badge-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 28px; }
+  .badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+  .b-ros    { color: #166534; background: #f0faf4; border-color: #86efac; }
+  .b-cpp    { color: #1e40af; background: #eff6ff; border-color: #93c5fd; }
+  .b-gl     { color: #5b21b6; background: #f5f3ff; border-color: #c4b5fd; }
+  .b-qt5    { color: #9a3412; background: #fff7ed; border-color: #fdba74; }
+  .b-cv     { color: #065f46; background: #ecfdf5; border-color: #6ee7b7; }
+
+  /* ── METRIC ROW ──────────────────────────────────── */
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 44px;
+  }
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    padding: 20px 22px;
+    border-top: 3px solid var(--accent);
+  }
+  .metric-num {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .metric-label {
+    font-size: 12px;
+    color: var(--ink-3);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .metric-desc {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ── SECTION ─────────────────────────────────────── */
+  .section { margin-bottom: 44px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+  }
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.2px;
+  }
+
+  /* ── CARD ────────────────────────────────────────── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    padding: 26px 28px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 14px;
+  }
+
+  /* ── GRID ────────────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 680px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* ── CALLOUT ─────────────────────────────────────── */
+  .callout {
+    padding: 14px 16px 14px 18px;
+    border-radius: 6px;
+    margin: 14px 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .callout-problem {
+    background: var(--red-bg);
+    border-left: 3px solid #ef4444;
+    color: #7f1d1d;
+  }
+  .callout-solution {
+    background: var(--green-bg);
+    border-left: 3px solid #22c55e;
+    color: var(--green);
+  }
+  .callout-info {
+    background: var(--accent-3);
+    border-left: 3px solid var(--accent);
+    color: #1e3a8a;
+  }
+  .callout-warn {
+    background: var(--orange-bg);
+    border-left: 3px solid #f97316;
+    color: var(--orange);
+  }
+  .callout strong { font-weight: 700; }
+
+  /* ── CODE ────────────────────────────────────────── */
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 12.5px;
+    background: var(--bg-code);
+    border: 1px solid var(--divider);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: #9a3412;
+  }
+  pre {
+    background: #1e2130;
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: #c9d1e0;
+    border: 1px solid #2d3148;
+  }
+  pre .kw   { color: #ff7b72; }
+  pre .fn   { color: #d2a8ff; }
+  pre .str  { color: #a5d6ff; }
+  pre .cmt  { color: #6b7890; font-style: italic; }
+  pre .num  { color: #79c0ff; }
+  pre .type { color: #ffa657; }
+
+  /* ── PIPELINE ────────────────────────────────────── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 18px 0 8px;
+  }
+  .pipe-step {
+    background: var(--bg-code);
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: var(--ink);
+    text-align: center;
+    min-width: 120px;
+  }
+  .pipe-step .plabel {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 3px;
+  }
+  .pipe-step .pval {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .pipe-arrow {
+    font-size: 16px;
+    color: var(--ink-3);
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+  .pipe-note {
+    font-size: 11.5px;
+    color: var(--ink-3);
+    text-align: center;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  /* ── TABLE ───────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13.5px; }
+  th {
+    background: var(--bg-code);
+    color: var(--ink-3);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--divider);
+  }
+  td { padding: 9px 12px; border-bottom: 1px solid #eef0f6; vertical-align: top; color: var(--ink-2); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 12px; }
+
+  /* ── FLOW STEPS ──────────────────────────────────── */
+  .flow { display: flex; flex-direction: column; gap: 12px; }
+  .flow-step { display: flex; gap: 14px; align-items: flex-start; }
+  .flow-num {
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-3);
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .flow-body { font-size: 13.5px; color: var(--ink-2); }
+  .flow-body strong { color: var(--ink); }
+
+  /* ── TECH STACK GRID ─────────────────────────────── */
+  .stack-item {
+    background: var(--bg-card);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .stack-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .stack-role {
+    font-size: 12px;
+    color: var(--ink-3);
+    line-height: 1.5;
+  }
+
+  /* ── RESULT IMAGE ────────────────────────────────── */
+  .result-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .result-img { width: 100%; display: block; }
+  .result-caption {
+    padding: 12px 18px;
+    font-size: 12px;
+    color: var(--ink-3);
+    border-top: 1px solid var(--divider);
+    line-height: 1.5;
+  }
+
+  /* ── DIVIDER ─────────────────────────────────────── */
+  hr { border: none; border-top: 1px solid var(--divider); margin: 36px 0; }
+
+  /* ── FOOTER ──────────────────────────────────────── */
+  .footer {
+    padding-top: 28px;
+    border-top: 1px solid var(--divider);
+    font-size: 12px;
+    color: var(--ink-3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer strong { color: var(--ink-2); }
+
+  p { margin-bottom: 10px; }
+  p:last-child { margin-bottom: 0; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 5px; color: var(--ink-2); font-size: 13.5px; }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 22px; }
+    .metric-row { grid-template-columns: 1fr; }
+    .topbar-nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topbar">
+  <a class="topbar-logo" href="#">CHOI SEUNGJAE · PORTFOLIO</a>
+  <ul class="topbar-nav">
+    <li><a href="#background">개발 배경</a></li>
+    <li><a href="#architecture">시스템 구조</a></li>
+    <li><a href="#implementation">구현 상세</a></li>
+    <li><a href="#result">결과</a></li>
+    <li><a href="#stack">기술 스택</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-eyebrow">ROS Driver Extension · C++ / OpenGL · 2024</div>
+    <h1>Simrad Halo20+ <span>레이더 드라이버 확장 노드</span><br>개발 포트폴리오</h1>
+    <p class="hero-sub">
+      극좌표 원시 데이터만 제공하는 해상 레이더 드라이버를 확장하여,
+      Qt5 Offscreen OpenGL 기반 실시간 직교좌표 변환 및 시각화 파이프라인을 구현한 프로젝트입니다.
+      레이더 오도메트리 추정 파이프라인의 입력 데이터 품질 확보를 목표로 단독 설계·개발되었습니다.
+    </p>
+    <div class="badge-row">
+      <span class="badge b-ros">ROS1 / catkin</span>
+      <span class="badge b-cpp">C++17</span>
+      <span class="badge b-gl">OpenGL / GLSL</span>
+      <span class="badge b-qt5">Qt5 Offscreen</span>
+      <span class="badge b-cv">OpenCV 4</span>
+    </div>
+  </header>
+
+  <!-- METRICS -->
+  <div class="metric-row">
+    <div class="metric-card">
+      <div class="metric-num">~6 m</div>
+      <div class="metric-label">절대경로오차 (APE)</div>
+      <div class="metric-desc">실해역 약 1 km 구간 기준, 레이더 단독 오도메트리 결과</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num">Real-time</div>
+      <div class="metric-label">직교좌표 변환</div>
+      <div class="metric-desc">사후 변환 없이 드라이버 단에서 즉시 변환 및 퍼블리시</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num">3-node</div>
+      <div class="metric-label">확장 노드 구성</div>
+      <div class="metric-desc">crop / range / compressed 출력 목적별 3개 노드로 분리 설계</div>
+    </div>
+  </div>
+
+  <!-- 01. 개발 배경 -->
+  <section class="section" id="background">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">개발 배경 및 문제 정의</span>
+    </div>
+    <div class="card">
+      <div class="card-title">프로젝트 컨텍스트</div>
+      <p style="color:var(--ink-2); font-size:13.5px;">
+        선박해양플랜트연구소(KRISO) 의뢰 과제로, <strong>GPS를 신뢰할 수 없는 극한 해상 환경</strong>에서
+        Simrad Halo20+ 해상 레이더 단독으로 항법을 수행하는 오도메트리 추정 시스템을 개발하는 프로젝트였습니다.
+        Livox LiDAR, Xsens IMU, Intel RealSense와 함께 통합 센서 플랫폼을 구성하였으며,
+        본 드라이버 확장 노드는 해당 파이프라인의 최초 데이터 진입점 역할을 담당합니다.
+      </p>
+      <div class="callout callout-problem">
+        <strong>문제 1 — 극좌표 전용 출력:</strong> 기존 드라이버(<code>marine_sensor_msgs/RadarSector</code>)는
+        극좌표(r, θ) 형식의 강도값만 제공했습니다. 오도메트리 알고리즘과 Rviz 기반 실시간 모니터링에
+        직접 활용하려면 직교좌표계 이미지로의 변환이 필수였습니다.
+      </div>
+      <div class="callout callout-problem">
+        <strong>문제 2 — 사후(Post) 변환의 한계:</strong> 기록 후 오프라인 변환 방식은 실해역 실험 중
+        즉각적인 데이터 확인과 이상 감지가 불가능합니다. 파이프라인 전단에서 실시간으로 처리된 데이터가
+        필요했습니다.
+      </div>
+      <div class="callout callout-solution">
+        <strong>해결 방향:</strong> 드라이버 단에 ROS 노드를 추가하여 극좌표 스캔을 수신하는 즉시
+        Qt5 Offscreen OpenGL FBO로 렌더링, 직교좌표 이미지를 생성·퍼블리시하는 확장 레이어를 설계했습니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- 02. 시스템 구조 -->
+  <section class="section" id="architecture">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">시스템 구조 및 데이터 흐름</span>
+    </div>
+    <div class="card">
+      <div class="card-title">데이터 파이프라인</div>
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="plabel">Sensor</div>
+          <div class="pval">Halo20+</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="plabel">ROS Topic</div>
+          <div class="pval">/HaloA/data</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="plabel">Driver Node</div>
+          <div class="pval">RadarSector</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step" style="border-color:var(--accent); background:var(--accent-3);">
+          <div class="plabel" style="color:var(--accent);">Extension Node</div>
+          <div class="pval">OpenGL FBO</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="plabel">Output</div>
+          <div class="pval">Image / CompressedImage</div>
+        </div>
+      </div>
+      <p class="pipe-note">Polar (r, θ) → Cartesian (x, y) 실시간 변환 → 오도메트리 알고리즘 입력</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">노드 구성 (3-node 분리 설계)</div>
+      <table>
+        <thead>
+          <tr>
+            <th>노드명</th>
+            <th>FBO 크기 결정 방식</th>
+            <th>출력 토픽 타입</th>
+            <th>주요 용도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>radar_img_crop</code></td>
+            <td>고정 FBO + 파라미터 기반 range crop</td>
+            <td><code>sensor_msgs/Image</code></td>
+            <td>특정 거리 이내 관심 영역 추출</td>
+          </tr>
+          <tr>
+            <td><code>radar_img_range</code></td>
+            <td>첫 번째 RadarSector 수신 시 동적 결정</td>
+            <td><code>sensor_msgs/Image</code></td>
+            <td>전 범위 실시간 시각화, 모니터링</td>
+          </tr>
+          <tr>
+            <td><code>radar_com_img_range</code></td>
+            <td>동적 결정 (range와 동일)</td>
+            <td><code>sensor_msgs/CompressedImage</code></td>
+            <td>JPEG/PNG 압축 전송, 대역폭 절감</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ROS 토픽 인터페이스</div>
+      <table>
+        <thead>
+          <tr><th>방향</th><th>토픽</th><th>메시지 타입</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Input</td>
+            <td><code>/HaloA/data</code></td>
+            <td><code>marine_sensor_msgs/RadarSector</code></td>
+          </tr>
+          <tr>
+            <td>Control</td>
+            <td><code>/HaloA/change_state</code></td>
+            <td><code>marine_radar_control_msgs/RadarControlValue</code></td>
+          </tr>
+          <tr>
+            <td>Output</td>
+            <td><code>~/radar_image</code></td>
+            <td><code>sensor_msgs/Image</code></td>
+          </tr>
+          <tr>
+            <td>Output (압축)</td>
+            <td><code>~/radar_image/compressed</code></td>
+            <td><code>sensor_msgs/CompressedImage</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 03. 구현 상세 -->
+  <section class="section" id="implementation">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">핵심 구현 상세</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Qt5 Offscreen OpenGL 렌더링 구조</div>
+      <p style="color:var(--ink-2); font-size:13.5px; margin-bottom:14px;">
+        헤드리스(Headless) 환경에서 GPU 가속 렌더링을 수행하기 위해 Qt5의 <code>QOffscreenSurface</code>와
+        <code>QOpenGLFramebufferObject(FBO)</code>를 활용했습니다.
+        디스플레이 없이 동작해야 하는 로봇 온보드 컴퓨터 환경을 위해 <code>QT_QPA_PLATFORM=offscreen</code>
+        및 <code>QT_OPENGL=software</code> 환경 변수를 설정합니다.
+      </p>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-body">
+            <strong>섹터 누적 (addSector):</strong>
+            <code>RadarSector</code> 콜백마다 각도-강도 쌍을 <code>QImage (Grayscale8)</code>에
+            극좌표로 누적합니다.
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-body">
+            <strong>360도 완성 감지 (Wraparound):</strong>
+            섹터 각도가 이전 값보다 작아지는 시점(wraparound)을 감지하여 한 회전 완료를 판단합니다.
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-body">
+            <strong>GLSL 셰이더 렌더링 (renderFullCircleGray):</strong>
+            누적된 극좌표 텍스처를 FBO에 바인딩하고, GLSL 프래그먼트 셰이더로
+            직교좌표 → 극좌표 역변환 샘플링을 수행하여 Cartesian 이미지를 생성합니다.
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-body">
+            <strong>ROS 메시지 변환 및 퍼블리시:</strong>
+            FBO 픽셀 데이터를 <code>cv_bridge</code>로 읽어 <code>sensor_msgs/Image</code> 또는
+            <code>CompressedImage</code>로 변환 후 퍼블리시합니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">GLSL 프래그먼트 셰이더 — 극좌표 역변환 샘플링</div>
+      <p style="color:var(--ink-2); font-size:13.5px; margin-bottom:12px;">
+        Cartesian 이미지의 각 픽셀 <code>(x, y)</code>를 중심 기준으로 정규화한 뒤,
+        <code>atan2</code>와 <code>length</code>로 극좌표 <code>(θ, r)</code>를 역산하여
+        원본 극좌표 텍스처를 샘플링합니다.
+      </p>
+<pre><span class="cmt">// Fragment Shader — Polar-to-Cartesian inverse mapping</span>
+<span class="kw">uniform</span> <span class="type">sampler2D</span> uPolarTex;
+<span class="kw">in</span>      <span class="type">vec2</span>      vTexCoord;
+<span class="kw">out</span>     <span class="type">vec4</span>      fragColor;
+
+<span class="kw">void</span> <span class="fn">main</span>() {
+  <span class="cmt">// NDC → 중심 기준 좌표 (-1 ~ +1)</span>
+  <span class="type">vec2</span> p = vTexCoord * <span class="num">2.0</span> - <span class="num">1.0</span>;
+
+  <span class="type">float</span> r     = <span class="fn">length</span>(p);            <span class="cmt">// 반경 (0 ~ 1)</span>
+  <span class="type">float</span> theta = <span class="fn">atan</span>(p.x, p.y);       <span class="cmt">// 방위각 (-π ~ +π)</span>
+
+  <span class="kw">if</span> (r > <span class="num">1.0</span>) { fragColor = <span class="type">vec4</span>(<span class="num">0.0</span>); <span class="kw">return</span>; }
+
+  <span class="cmt">// 극좌표 UV 산출 (각도 정규화 → 0 ~ 1)</span>
+  <span class="type">vec2</span> polarUV = <span class="type">vec2</span>(
+    r,
+    (theta + <span class="num">3.14159265</span>) / (<span class="num">2.0</span> * <span class="num">3.14159265</span>)
+  );
+
+  <span class="type">float</span> intensity = <span class="fn">texture</span>(uPolarTex, polarUV).r;
+  fragColor = <span class="type">vec4</span>(<span class="type">vec3</span>(intensity), <span class="num">1.0</span>);
+}</pre>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">FBO 크기 결정 전략</div>
+        <p style="color:var(--ink-2); font-size:13.5px;">
+          <code>radar_img_crop</code>은 파라미터 <code>sensor_range_max</code>로 FBO 크기를 노드 시작 시
+          사전 결정합니다. <code>radar_img_range / com</code>은 첫 번째 <code>RadarSector</code> 메시지의
+          실제 에코 카운트에서 FBO 크기를 동적으로 산출하여 센서 설정 변경에 유연하게 대응합니다.
+          FBO 크기는 <code>[64, 4096]</code>으로 클램프됩니다.
+        </p>
+        <div class="callout callout-info">
+          <strong>설계 의도:</strong> 범위 파라미터를 실시간으로 변경해도 노드를 재시작하지 않고
+          자동으로 해상도가 갱신됩니다.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">레이더 생명주기 관리</div>
+        <p style="color:var(--ink-2); font-size:13.5px;">
+          노드 시작 시 레이더를 <code>transmit</code> 상태로, 종료 시 <code>standby</code>로
+          자동 전환합니다. Python 스크립트(<code>radar_set_state.py</code>)로 수동 제어도 가능합니다.
+        </p>
+        <div class="callout callout-warn">
+          <strong>제약:</strong> <code>QT_QPA_PLATFORM=offscreen</code> 및 <code>QT_OPENGL=software</code>
+          환경 변수는 헤드리스 동작의 필수 조건으로 절대 제거하면 안 됩니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">압축 이미지 노드 — 대역폭 최적화</div>
+      <p style="color:var(--ink-2); font-size:13.5px; margin-bottom:12px;">
+        <code>radar_com_img_range</code>는 동일한 렌더링 파이프라인에 JPEG/PNG 압축 레이어를 추가합니다.
+        실해역 실험에서 유선 LAN이 아닌 무선 통신 환경의 대역폭 제약을 고려한 설계입니다.
+      </p>
+      <pre><span class="cmt">// cv_bridge → CompressedImage 변환 핵심 흐름</span>
+<span class="type">std::vector</span>&lt;<span class="type">uchar</span>&gt; buf;
+<span class="type">std::vector</span>&lt;<span class="type">int</span>&gt;   params = { cv::IMWRITE_JPEG_QUALITY, jpeg_quality_ };
+
+cv::<span class="fn">imencode</span>(<span class="str">".jpg"</span>, cv_img, buf, params);
+
+<span class="type">sensor_msgs::CompressedImage</span> msg;
+msg.header  = header;
+msg.format  = <span class="str">"jpeg"</span>;
+msg.data    = buf;
+pub_.<span class="fn">publish</span>(msg);</pre>
+      <div class="callout callout-info">
+        파라미터 <code>_compression_format</code>(<code>jpeg</code> / <code>png</code>)와
+        <code>_jpeg_quality</code>(0~100)로 압축 방식을 런타임에 조정할 수 있습니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- 04. 결과 -->
+  <section class="section" id="result">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">실해역 검증 결과</span>
+    </div>
+    <div class="result-wrap">
+      <img class="result-img" src="radar_image.png" alt="직교좌표 변환된 레이더 이미지 — 제부도 실해역 실험 결과" />
+      <div class="result-caption">
+        <strong>Fig. 1</strong> &nbsp;OpenGL FBO 렌더링 결과 — 직교좌표 Cartesian 레이더 이미지.
+        제부도 인근 실해역 실험에서 취득. 중앙이 선박 위치이며 해안선 및 주변 지형지물이 반사 패턴으로 나타납니다.
+        오도메트리 파이프라인(LIO-SAM 계열)의 입력 이미지로 사용되었습니다.
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">오도메트리 성능 지표</div>
+        <table>
+          <thead><tr><th>항목</th><th>수치</th></tr></thead>
+          <tbody>
+            <tr><td>실험 구간</td><td>제부도 인근 실해역 약 1 km</td></tr>
+            <tr><td>절대경로오차 (APE)</td><td><strong>6 m 이내</strong></td></tr>
+            <tr><td>항법 센서</td><td>레이더 단독 (GPS 미사용)</td></tr>
+            <tr><td>IMU 융합</td><td>Xsens MTi-G-710</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">드라이버 확장 효과</div>
+        <div class="flow" style="gap:10px;">
+          <div class="flow-step">
+            <div class="flow-num">✓</div>
+            <div class="flow-body">실시간 모니터링으로 실해역 실험 중 <strong>즉각적인 이상 감지</strong> 가능</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-num">✓</div>
+            <div class="flow-body">오도메트리 파이프라인 직접 연결로 <strong>사후 변환 단계 제거</strong></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-num">✓</div>
+            <div class="flow-body">3종 노드로 용도별 분리 — <strong>유연한 배포 구성</strong> 지원</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-num">✓</div>
+            <div class="flow-body">압축 출력 지원으로 <strong>무선 환경 대역폭 절감</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05. 기술 스택 -->
+  <section class="section" id="stack">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-title">기술 스택 및 환경</span>
+    </div>
+    <div class="grid-3">
+      <div class="stack-item">
+        <div class="stack-name">ROS1 / catkin</div>
+        <div class="stack-role">노드 빌드 시스템, 토픽 pub/sub, 파라미터 서버</div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-name">C++17</div>
+        <div class="stack-role">드라이버 확장 노드 전체 구현 언어</div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-name">Qt5 (Gui, OpenGL)</div>
+        <div class="stack-role">Offscreen FBO 렌더링 컨텍스트, QImage 버퍼 관리</div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-name">OpenGL / GLSL</div>
+        <div class="stack-role">극좌표 → 직교좌표 역변환 프래그먼트 셰이더</div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-name">OpenCV 4 / cv_bridge</div>
+        <div class="stack-role">FBO 픽셀 → ROS Image 변환, JPEG/PNG 인코딩</div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-name">marine_sensor_msgs</div>
+        <div class="stack-role">RadarSector 입력 메시지 타입 (극좌표 강도값)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">빌드 및 실행 환경</div>
+      <pre><span class="cmt"># 빌드</span>
+catkin build radar_converter_node
+
+<span class="cmt"># Rviz 포함 전체 실행 (기본 range 3000m)</span>
+roslaunch radar_converter_node simrad_radar.launch range_limit:=<span class="num">1000.0</span>
+
+<span class="cmt"># 개별 노드 직접 실행</span>
+rosrun radar_converter_node radar_img_crop \
+  _input_topic:=/HaloA/data _range_limit:=<span class="num">500.0</span>
+
+rosrun radar_converter_node radar_com_img_range \
+  _compression_format:=jpeg _jpeg_quality:=<span class="num">90</span></pre>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div>
+      <strong>최승재 (Choi Seungjae)</strong> &nbsp;·&nbsp; 자율운항시스템공학과 &nbsp;·&nbsp; 충남대학교
+    </div>
+    <div>레이더 오도메트리 프로젝트 · KRISO 과제 · 2024</div>
+  </footer>
+
+</div><!-- /page -->
+</body>
+</html>
